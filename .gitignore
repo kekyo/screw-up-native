@@ -1,0 +1,20 @@
+# Build directories
+/build/
+/artifacts/
+
+# Binaries and objects
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+
+# Editor/OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*~
+*.swp
+*.tmp

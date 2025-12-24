@@ -1,0 +1,10 @@
+// screw-up-native - Native CLI that Git versioning metadata dumper/formatter.
+// Copyright (c) Kouji Matsui (@kekyo@mi.kekyo.net)
+// Under MIT.
+// https://github.com/kekyo/screw-up-native/
+
+#pragma once
+
+#define SCREW_UP_VERSION "{version}"
+#define SCREW_UP_GIT_HASH "{git.commit.hash}"
+#define SCREW_UP_GIT_SHORT_HASH "{git.commit.shortHash}"
