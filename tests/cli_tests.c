@@ -362,6 +362,56 @@ cleanup:
   return result;
 }
 
+static int test_cli_dump_worktree_directory_argument(void) {
+  int result = 1;
+  GitTestRepository repo = {0};
+  GitTestRepository worktree = {0};
+  char *commit_hash = NULL;
+  char short_hash[8];
+  char *output = NULL;
+  char *trimmed = NULL;
+  char *argv[] = {"screw-up", "dump", NULL, NULL};
+
+  if (git_test_repo_create(&repo) != 0) {
+    goto cleanup;
+  }
+
+  git_test_repo_create_file(&repo, "README.md", "# Test Project");
+  commit_hash = git_test_repo_commit(&repo, "Initial commit");
+  git_test_repo_create_tag(&repo, "v1.2.3", NULL);
+
+  if (git_test_repo_create_worktree(&repo, &worktree, "HEAD") != 0) {
+    goto cleanup;
+  }
+
+  ASSERT_TRUE(commit_hash != NULL, "commit hash missing");
+  memcpy(short_hash, commit_hash, 7);
+  short_hash[7] = '\0';
+
+  argv[2] = worktree.path;
+  output = run_cli_with_input("", 3, argv);
+
+  ASSERT_TRUE(output != NULL, "dump output missing");
+  trimmed = su_str_trim_copy(output);
+  ASSERT_TRUE(trimmed != NULL, "trimmed output missing");
+  ASSERT_TRUE(json_contains_string_value(trimmed, "version", "1.2.3"),
+              "version missing");
+  ASSERT_TRUE(json_contains_string_value(trimmed, "hash", commit_hash),
+              "commit hash missing");
+  ASSERT_TRUE(json_contains_string_value(trimmed, "shortHash", short_hash),
+              "short hash missing");
+
+  result = 0;
+
+cleanup:
+  free(trimmed);
+  free(output);
+  free(commit_hash);
+  git_test_repo_cleanup(&worktree);
+  git_test_repo_cleanup(&repo);
+  return result;
+}
+
 static int test_cli_dump_no_wds_option(void) {
   int result = 1;
   GitTestRepository repo = {0};
@@ -654,6 +704,7 @@ int main(void) {
     {"cli help options", test_cli_help_options},
     {"cli dump outputs metadata", test_cli_dump_outputs_metadata},
     {"cli dump directory argument", test_cli_dump_directory_argument},
+    {"cli dump worktree directory argument", test_cli_dump_worktree_directory_argument},
     {"cli dump no-wds option", test_cli_dump_no_wds_option},
     {"cli dump help option", test_cli_dump_help_option},
   };
