@@ -937,6 +937,58 @@ cleanup:
   return result;
 }
 
+static int test_git_metadata_extraction_from_worktree(void) {
+  int result = 1;
+  GitTestRepository repo = {0};
+  GitTestRepository worktree = {0};
+  GitMetadataFetcher *fetcher = NULL;
+  Metadata *metadata = NULL;
+  char *commit_hash = NULL;
+  Logger logger = test_logger();
+
+  if (git_test_repo_create(&repo) != 0) {
+    goto cleanup;
+  }
+
+  git_test_repo_create_file(&repo, "README.md", "# Test Project");
+  commit_hash = git_test_repo_commit(&repo, "Initial commit");
+  git_test_repo_create_tag(&repo, "v1.2.3", NULL);
+
+  if (git_test_repo_create_worktree(&repo, &worktree, "HEAD") != 0) {
+    goto cleanup;
+  }
+
+  fetcher = get_fetch_git_metadata(worktree.path, 1, &logger);
+  metadata = git_metadata_fetch(fetcher);
+
+  ASSERT_TRUE(metadata != NULL, "metadata");
+  ASSERT_TRUE(metadata->has_git, "has git");
+  ASSERT_STR_EQ(metadata->git.version, "1.2.3", "version");
+
+  {
+    const char *expected_tags[] = {"v1.2.3"};
+    ASSERT_STR_ARRAY(&metadata->git.tags, expected_tags, 1, "tags");
+  }
+
+  ASSERT_STR_EQ(metadata->git.commit.hash, commit_hash, "commit hash");
+
+  {
+    const char *expected_branches[] = {"main"};
+    ASSERT_STR_ARRAY(&metadata->git.branches, expected_branches, 1, "branches");
+  }
+
+  result = 0;
+
+cleanup:
+  free(commit_hash);
+  if (fetcher) {
+    git_metadata_fetcher_free(fetcher);
+  }
+  git_test_repo_cleanup(&worktree);
+  git_test_repo_cleanup(&repo);
+  return result;
+}
+
 static int test_detect_modified_files(int check_status) {
   int result = 1;
   GitTestRepository repo = {0};
@@ -1297,6 +1349,7 @@ int main(void) {
     {"branch without tags merged", test_branch_without_tags_merged_into_tagged},
     {"deeply nested branch structure", test_deeply_nested_branch_structure},
     {"git metadata extraction", test_git_metadata_extraction},
+    {"git metadata extraction from worktree", test_git_metadata_extraction_from_worktree},
     {"detect modified files enabled", test_detect_modified_files_enabled},
     {"detect modified files disabled", test_detect_modified_files_disabled},
     {"gitignore ignored files", test_gitignore_ignored_files},

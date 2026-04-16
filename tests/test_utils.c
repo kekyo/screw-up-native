@@ -151,6 +151,43 @@ int git_test_repo_create(GitTestRepository *repo) {
   return 0;
 }
 
+int git_test_repo_create_worktree(GitTestRepository *repo,
+                                  GitTestRepository *worktree,
+                                  const char *ref_name) {
+  char template_path[] = "/tmp/git-worktree-test-XXXXXX";
+  char *dir;
+  char *checkout_ref;
+
+  if (!repo || !repo->path || !worktree) {
+    return -1;
+  }
+
+  worktree->path = NULL;
+
+  dir = mkdtemp(template_path);
+  if (!dir) {
+    return -1;
+  }
+
+  worktree->path = su_strdup(dir);
+  if (!worktree->path) {
+    char *const argv[] = {"rm", "-rf", dir, NULL};
+    run_command_capture(NULL, argv, NULL);
+    return -1;
+  }
+
+  checkout_ref = (char *)(ref_name ? ref_name : "HEAD");
+  {
+    char *const argv[] = {"git", "worktree", "add", worktree->path, checkout_ref, NULL};
+    if (run_git(repo, argv, NULL) != 0) {
+      git_test_repo_cleanup(worktree);
+      return -1;
+    }
+  }
+
+  return 0;
+}
+
 void git_test_repo_cleanup(GitTestRepository *repo) {
   if (!repo || !repo->path) {
     return;

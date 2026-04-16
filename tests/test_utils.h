@@ -13,6 +13,9 @@ typedef struct {
 } GitTestRepository;
 
 int git_test_repo_create(GitTestRepository *repo);
+int git_test_repo_create_worktree(GitTestRepository *repo,
+                                  GitTestRepository *worktree,
+                                  const char *ref_name);
 void git_test_repo_cleanup(GitTestRepository *repo);
 
 int git_test_repo_create_file(GitTestRepository *repo,
